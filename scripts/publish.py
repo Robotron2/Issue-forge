@@ -132,23 +132,43 @@ def main():
                 
             console.print("[cyan]Publishing...[/cyan]")
             
-            # Run gh command with body as stdin
-            try:
-                result = subprocess.run(cmd, input=body, capture_output=True, text=True, check=True)
-                # Output from `gh issue create` is usually the URL: https://github.com/org/repo/issues/123
-                output_url = result.stdout.strip()
-                github_issue_num = int(output_url.split("/")[-1])
-                
-                console.print(f"[green]Successfully published! GitHub Issue #{github_issue_num}[/green]")
-                
-                published_state[state_key] = {"github_issue": github_issue_num}
-                save_published_state(ROOT_DIR, published_state)
-                published_count += 1
-                
-            except subprocess.CalledProcessError as e:
-                console.print(f"[red]Failed to publish issue #{issue_id}:[/red]")
-                console.print(e.stderr)
-                console.print("[red]Aborting further publishing.[/red]")
+            while True:
+                try:
+                    result = subprocess.run(cmd, input=body, capture_output=True, text=True, check=True)
+                    # Output from `gh issue create` is usually the URL: https://github.com/org/repo/issues/123
+                    output_url = result.stdout.strip()
+                    github_issue_num = int(output_url.split("/")[-1])
+                    
+                    console.print(f"[green]Successfully published! GitHub Issue #{github_issue_num}[/green]")
+                    
+                    published_state[state_key] = {"github_issue": github_issue_num}
+                    save_published_state(ROOT_DIR, published_state)
+                    published_count += 1
+                    break
+                    
+                except subprocess.CalledProcessError as e:
+                    import re
+                    match = re.search(r"could not add label:\s*'([^']+)'\s*not found", e.stderr, re.IGNORECASE)
+                    if match:
+                        missing_label = match.group(1)
+                        console.print(f"[yellow]Label '{missing_label}' not found on GitHub. Auto-creating it...[/yellow]")
+                        try:
+                            subprocess.run(["gh", "label", "create", missing_label, "--repo", f"{config.owner}/{config.repo}"], check=True, capture_output=True)
+                            # Retry the issue creation after successfully creating the label
+                            continue
+                        except subprocess.CalledProcessError as label_e:
+                            console.print(f"[red]Failed to auto-create label '{missing_label}'. Please create it manually on GitHub.[/red]")
+                            console.print(label_e.stderr)
+                            console.print("[red]Aborting further publishing.[/red]")
+                            break # Break the while loop
+                    else:
+                        console.print(f"[red]Failed to publish issue #{issue_id}:[/red]")
+                        console.print(e.stderr)
+                        console.print("[red]Aborting further publishing.[/red]")
+                        break # Break the while loop
+            
+            # If we broke out of the while loop due to a hard error, break the outer loop too
+            if 'github_issue_num' not in locals() or published_state.get(state_key, {}).get("github_issue") != locals().get('github_issue_num'):
                 break
                 
     except KeyboardInterrupt:
