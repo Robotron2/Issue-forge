@@ -44,6 +44,9 @@ def main():
     yaml_files = sorted(list(ISSUES_DIR.glob("*.yml")))
     
     to_publish = []
+    already_published_count = 0
+    skipped_interactive_count = 0
+    published_count = 0
     
     # Filter targets based on args
     target_ids = set()
@@ -73,6 +76,7 @@ def main():
             state_key = f"{issue_id:03d}"
             if state_key in published_state:
                 console.print(f"[yellow]Skipping #{issue_id}: already published as GitHub Issue #{published_state[state_key].get('github_issue')}[/yellow]")
+                already_published_count += 1
                 continue
                 
             to_publish.append(data)
@@ -82,65 +86,80 @@ def main():
             
     if not to_publish:
         console.print("[green]No new issues to publish.[/green]")
+        if already_published_count > 0:
+            console.print(f"[dim]{already_published_count} issues were skipped because they are already published.[/dim]")
         return
         
-    for data in to_publish:
-        issue_id = data["id"]
-        title = data["title"]
-        labels = data.get("labels", [])
-        state_key = f"{issue_id:03d}"
-        
-        console.print(f"\n[cyan]Target Repository:[/cyan] {config.owner}/{config.repo}")
-        console.print(f"[cyan]Local Issue ID:[/cyan] {issue_id}")
-        console.print(f"[cyan]Title:[/cyan] {title}")
-        
-        if not args.yes and not args.dry_run:
-            if not Confirm.ask("Publish this issue?"):
-                console.print("[yellow]Skipping...[/yellow]")
+    try:
+        for data in to_publish:
+            issue_id = data["id"]
+            title = data["title"]
+            labels = data.get("labels", [])
+            state_key = f"{issue_id:03d}"
+            
+            console.print(f"\n[cyan]Target Repository:[/cyan] {config.owner}/{config.repo}")
+            console.print(f"[cyan]Local Issue ID:[/cyan] {issue_id}")
+            console.print(f"[cyan]Title:[/cyan] {title}")
+            
+            if not args.yes and not args.dry_run:
+                if not Confirm.ask("Publish this issue?"):
+                    console.print("[yellow]Skipping...[/yellow]")
+                    skipped_interactive_count += 1
+                    continue
+                    
+            # Render markdown body
+            body = template.render(**data)
+            body = body.strip() + "\n"
+            
+            # We also write it to generated folder as per user requirement: 
+            # "It should still write the Markdown to generated/ for your review, but it shouldn't read it back to publish."
+            GENERATED_DIR.mkdir(exist_ok=True)
+            with open(GENERATED_DIR / f"{state_key}.md", "w", encoding="utf-8") as gen_f:
+                gen_f.write(body)
+                
+            cmd = [
+                "gh", "issue", "create",
+                "--repo", f"{config.owner}/{config.repo}",
+                "--title", title,
+                "--body-file", "-"
+            ]
+            for label in labels:
+                cmd.extend(["--label", label])
+                
+            if args.dry_run:
+                console.print(f"[magenta]DRY RUN: Would execute[/magenta] {' '.join(cmd)}")
                 continue
                 
-        # Render markdown body
-        body = template.render(**data)
-        body = body.strip() + "\n"
+            console.print("[cyan]Publishing...[/cyan]")
+            
+            # Run gh command with body as stdin
+            try:
+                result = subprocess.run(cmd, input=body, capture_output=True, text=True, check=True)
+                # Output from `gh issue create` is usually the URL: https://github.com/org/repo/issues/123
+                output_url = result.stdout.strip()
+                github_issue_num = int(output_url.split("/")[-1])
+                
+                console.print(f"[green]Successfully published! GitHub Issue #{github_issue_num}[/green]")
+                
+                published_state[state_key] = {"github_issue": github_issue_num}
+                save_published_state(ROOT_DIR, published_state)
+                published_count += 1
+                
+            except subprocess.CalledProcessError as e:
+                console.print(f"[red]Failed to publish issue #{issue_id}:[/red]")
+                console.print(e.stderr)
+                console.print("[red]Aborting further publishing.[/red]")
+                break
+                
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Publishing interrupted by user (Ctrl+C).[/yellow]")
         
-        # We also write it to generated folder as per user requirement: 
-        # "It should still write the Markdown to generated/ for your review, but it shouldn't read it back to publish."
-        GENERATED_DIR.mkdir(exist_ok=True)
-        with open(GENERATED_DIR / f"{state_key}.md", "w", encoding="utf-8") as gen_f:
-            gen_f.write(body)
-            
-        cmd = [
-            "gh", "issue", "create",
-            "--repo", f"{config.owner}/{config.repo}",
-            "--title", title,
-            "--body-file", "-"
-        ]
-        for label in labels:
-            cmd.extend(["--label", label])
-            
-        if args.dry_run:
-            console.print(f"[magenta]DRY RUN: Would execute[/magenta] {' '.join(cmd)}")
-            continue
-            
-        console.print("[cyan]Publishing...[/cyan]")
-        
-        # Run gh command with body as stdin
-        try:
-            result = subprocess.run(cmd, input=body, capture_output=True, text=True, check=True)
-            # Output from `gh issue create` is usually the URL: https://github.com/org/repo/issues/123
-            output_url = result.stdout.strip()
-            github_issue_num = int(output_url.split("/")[-1])
-            
-            console.print(f"[green]Successfully published! GitHub Issue #{github_issue_num}[/green]")
-            
-            published_state[state_key] = {"github_issue": github_issue_num}
-            save_published_state(ROOT_DIR, published_state)
-            
-        except subprocess.CalledProcessError as e:
-            console.print(f"[red]Failed to publish issue #{issue_id}:[/red]")
-            console.print(e.stderr)
-            console.print("[red]Aborting further publishing.[/red]")
-            break
+    finally:
+        # Print summary
+        console.print("\n[bold]Publishing Summary:[/bold]")
+        console.print(f"  - [green]{published_count} newly published[/green]")
+        console.print(f"  - [yellow]{already_published_count} skipped (already on GitHub)[/yellow]")
+        console.print(f"  - [dim]{skipped_interactive_count} skipped interactively[/dim]")
 
 if __name__ == "__main__":
     main()
