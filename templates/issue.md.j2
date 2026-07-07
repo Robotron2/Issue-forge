@@ -1,0 +1,82 @@
+# Issue #{{ id }} — {{ type }}: {{ title }}
+
+## Description
+
+{{ description }}
+
+---
+
+{% if requirements %}
+## Requirements & Context
+
+{% for req in requirements %}
+{{ req }}
+{% if not loop.last %}
+
+{% endif %}
+{% endfor %}
+
+---
+
+{% endif %}
+{% if acceptance %}
+## Acceptance Criteria
+
+{% for ac in acceptance %}
+* [ ] {{ ac }}
+{% endfor %}
+
+---
+
+{% endif %}
+{% if out_of_scope %}
+## Out of Scope
+
+{% for os in out_of_scope %}
+* {{ os }}
+{% endfor %}
+
+---
+
+{% endif %}
+{% if branch %}
+## Suggested Execution
+
+```bash
+git checkout -b {{ branch }}
+```
+
+---
+
+{% endif %}
+{% if commit %}
+## Suggested Commit Message
+
+```text
+{{ commit }}
+```
+
+---
+
+{% endif %}
+{% if testing %}
+## Testing Notes
+
+{{ testing }}
+
+---
+
+{% endif %}
+{% if references %}
+## References
+
+{% for ref in references %}
+{{ ref }}
+{% endfor %}
+
+---
+
+{% endif %}
+## Definition of Done
+
+* [ ] Ready for review.

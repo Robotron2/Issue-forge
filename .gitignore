@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+published.json
+config.yml
+venv/
+generated/
+issues
