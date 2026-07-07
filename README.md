@@ -21,6 +21,14 @@ issue-generator/
 - Python 3.12+
 - GitHub CLI (`gh`)
 
+## Features
+
+- **Automated Migration**: Converts legacy markdown to highly structured YAML configurations.
+- **Smart Resumption & Idempotency**: Automatically tracks successfully published issues in `published.json`. Re-running the script will detect where you left off and completely skip already published issues.
+- **Graceful Error Handling**: Safely aborts if you interrupt the publish prompt (Ctrl+C) without throwing ugly Python tracebacks, saving your exact state.
+- **Rich Publishing Summary**: Displays a clean summary of newly published, interactively skipped, and automatically skipped issues after every run.
+- **Dry-Run Mode**: Safely simulate publish runs before pushing to GitHub.
+
 ## 1. Installation
 
 Install the required Python dependencies:
@@ -114,8 +122,11 @@ python scripts/publish.py --range 7-12
 ```
 
 **Skip Confirmation:**
+Run completely unattended by skipping the interactive `y/n` prompts. Combines perfectly with Smart Resumption to pick up right where you left off:
 ```bash
 python scripts/publish.py --yes
+# or
+python scripts/publish.py -y
 ```
 
 ## 8. Troubleshooting
