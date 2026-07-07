@@ -31,10 +31,21 @@ issue-generator/
 
 ## 1. Installation
 
-Install the required Python dependencies:
+We recommend using a virtual environment to keep your dependencies isolated. You can use standard `pip` (which is what we used) or `uv` as a faster alternative.
 
+**Option A: Using Standard venv + pip (What we used)**
 ```bash
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
+```
+
+**Option B: Using `uv` (Faster alternative)**
+If you have [uv](https://github.com/astral-sh/uv) installed, you can set it up instantly:
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
 ```
 
 ## 2. GitHub CLI Setup & Authentication
