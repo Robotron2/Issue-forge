@@ -9,7 +9,7 @@ ROOT_DIR = Path(__file__).parent.parent
 ORIGINAL_DIR = ROOT_DIR / "original"
 ISSUES_DIR = ROOT_DIR / "issues"
 
-ISSUE_HEADER_RE = re.compile(r"^# Issue #(\d+)\s*—\s*([a-zA-Z]+):\s*(.*)$")
+ISSUE_HEADER_RE = re.compile(r"^# Issue #?(\d+)\s*—\s*(?:([a-zA-Z]+):\s*)?(.*)$")
 
 TYPE_TO_LABEL = {
     "feat": "enhancement",
@@ -20,6 +20,8 @@ TYPE_TO_LABEL = {
 }
 
 def parse_list_or_paragraphs(text: str) -> list[str]:
+    if not text:
+        return []
     lines = [line.strip() for line in text.split("\n")]
     items = []
     current_item = []
@@ -57,10 +59,10 @@ def parse_issue(content: str) -> dict:
             break
             
     if not header_match:
-        raise ValueError("Could not find issue header matching '# Issue #<id> — <type>: <title>'")
+        raise ValueError("Could not find issue header matching '# Issue #<id> — <type>: <title>' or '# Issue <id> — <title>'")
         
     issue_id = int(header_match.group(1))
-    issue_type = header_match.group(2)
+    issue_type = header_match.group(2) or "feat" # Default to feat if no type provided
     title = header_match.group(3).strip()
     
     # Split by sections
@@ -72,6 +74,7 @@ def parse_issue(content: str) -> dict:
         if line.startswith("## "):
             if current_section:
                 sections[current_section] = "\n".join(current_content).strip()
+            # normalize section names
             current_section = line[3:].strip().lower()
             current_content = []
         elif current_section and line != "---":
@@ -80,15 +83,17 @@ def parse_issue(content: str) -> dict:
     if current_section:
         sections[current_section] = "\n".join(current_content).strip()
         
-    # Required sections check
-    required_sections = ["description", "requirements & context", "acceptance criteria"]
-    for req in required_sections:
-        if req not in sections:
-            raise ValueError(f"Issue {issue_id} is missing required section: '{req}'")
-            
+    # Required sections check (flexible for 'and' vs '&')
+    if "description" not in sections:
+        raise ValueError(f"Issue {issue_id} is missing required section: 'description'")
+        
+    req_context = sections.get("requirements & context") or sections.get("requirements and context")
+    if req_context is None:
+        raise ValueError(f"Issue {issue_id} is missing required section: 'requirements and context'")
+        
     # Extract specific fields
     description = sections.get("description", "")
-    requirements = parse_list_or_paragraphs(sections.get("requirements & context", ""))
+    requirements = parse_list_or_paragraphs(req_context)
     acceptance = parse_list_or_paragraphs(sections.get("acceptance criteria", ""))
     out_of_scope = parse_list_or_paragraphs(sections.get("out of scope", ""))
     references = parse_list_or_paragraphs(sections.get("references", ""))
@@ -101,11 +106,11 @@ def parse_issue(content: str) -> dict:
     if branch_match:
         branch = branch_match.group(1)
         
-    # Suggested Commit
+    # Suggested Commit (or Example Commit)
     commit = None
-    commit_text = sections.get("suggested commit message", "")
-    # extract code block
-    code_block_match = re.search(r"```[a-z]*\n(.*?)```", commit_text, re.DOTALL)
+    commit_text = sections.get("suggested commit message") or sections.get("example commit message") or ""
+    # extract code block (handling weird attributes like ```text id="xxx")
+    code_block_match = re.search(r"```.*?\n(.*?)```", commit_text, re.DOTALL)
     if code_block_match:
         commit = code_block_match.group(1).strip()
     else:
@@ -151,14 +156,18 @@ def main():
         with open(md_file, "r", encoding="utf-8") as f:
             content = f.read()
             
-        # Split issues by looking for "\n# Issue #" or starting with "# Issue #"
-        parts = re.split(r"(?m)^# Issue #", content)
+        # Split issues by looking for "\n# Issue"
+        parts = re.split(r"(?m)^# Issue\b", content)
         for part in parts:
             part = part.strip()
             if not part:
                 continue
-            # restore the '# Issue #' prefix
-            part = "# Issue #" + part
+            # restore the '# Issue ' prefix
+            if part.startswith("#"):
+                # Handle `#1 — ...`
+                part = "# Issue " + part
+            else:
+                part = "# Issue " + part
             issue_blocks.append((md_file.name, part))
             
     if not issue_blocks:

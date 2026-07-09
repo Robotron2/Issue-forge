@@ -1,1708 +1,874 @@
-# Issue #3 — feat: define storage keys for escrow persistence
+# Issue 1 — Implement Environment Configuration
 
 ## Description
 
-Introduce the storage key definitions used to persist escrow data within Soroban storage.
+The relayer should load and validate all required environment variables during application startup. Missing or invalid configuration should fail fast with a clear error message instead of allowing the server to start in a broken state.
 
-These keys provide a stable interface for future storage operations.
+## Requirements and Context
 
----
+* Create a centralized configuration module.
+* Load environment variables using `dotenv`.
+* Validate required configuration values.
+* Fail application startup if required variables are missing.
+* Export a typed/configured object for the rest of the application.
 
-## Requirements & Context
+Required variables should include:
 
-Create a `DataKey` enum covering all storage requirements for the MVP.
-
-Structure the keys to support future contract expansion.
-
----
-
-## Acceptance Criteria
-
-* [ ] `DataKey` enum created.
-* [ ] Naming follows project conventions.
-* [ ] Compiles successfully.
-* [ ] Documented.
-
----
-
-## Out of Scope
-
-* Reading storage
-* Writing storage
-* Escrow business logic
-
----
+* `PORT`
+* `RPC_URL`
+* `NETWORK_PASSPHRASE`
+* `CONTRACT_ID`
+* `FEE_BUMP_SECRET_KEY`
 
 ## Suggested Execution
-
-```bash
-git checkout -b feat/storage-keys
-```
-
----
-
-## Suggested Commit Message
 
 ```text
-feat: define escrow storage keys
+git checkout -b feat/environment-configuration
+
+Create config module
+
+Load dotenv
+
+Validate required variables
+
+Export configuration object
+
+Update application bootstrap
 ```
 
----
-
-## Testing Notes
-
-Compilation verification only.
-
----
-
-## References
-
-Issue #2
-
----
-
-## Definition of Done
-
-* [ ] Ready for review.
-
-
-
-
-# Issue #4 — feat: implement storage helper utilities
-
-## Description
-
-Implement reusable helper functions for reading and writing escrow state to Soroban storage.
-
-These helpers will centralize storage logic and reduce duplication across the contract.
-
----
-
-## Requirements & Context
-
-Implement helper methods for:
-
-* Store escrow
-* Retrieve escrow
-* Update escrow
-
-Helpers should return appropriate errors where necessary and avoid duplicated storage logic.
-
----
-
-## Acceptance Criteria
-
-* [ ] Storage helper module created.
-* [ ] Read helper implemented.
-* [ ] Write helper implemented.
-* [ ] Update helper implemented.
-* [ ] Unit tests added where applicable.
-* [ ] Compiles successfully.
-
----
-
-## Out of Scope
-
-* Authentication
-* Token transfers
-* Events
-* Escrow lifecycle logic
-
----
-
-## Suggested Execution
-
-```bash
-git checkout -b feat/storage-helpers
-```
-
----
-
-## Suggested Commit Message
+## Example Commit Message
 
 ```text
-feat: implement escrow storage helpers
+feat: implement centralized environment configuration
 ```
 
 ---
 
-## Testing Notes
-
-Verify:
-
-* Escrow can be stored.
-* Escrow can be retrieved.
-* Updated state persists correctly.
-
----
-
-## References
-
-Issues #2 and #3
-
----
-
-## Definition of Done
-
-* [ ] All acceptance criteria satisfied.
-* [ ] Tests pass.
-* [ ] Ready for maintainer review.
-
-
-
-# Issue #5 — feat: implement create_escrow entrypoint
+# Issue 2 — Implement Centralized Error Handling
 
 ## Description
 
-The contract currently has no mechanism for creating an escrow agreement. Implement the `create_escrow` entrypoint, which initializes a new escrow and persists it to contract storage.
+Introduce a centralized error handling strategy for the Express application to ensure API responses remain consistent and internal errors are not leaked to clients.
 
-This function is the starting point of every escrow lifecycle and should only be responsible for creating the escrow record—not locking funds or transferring tokens.
+## Requirements and Context
 
----
+* Create a reusable error middleware.
+* Return consistent JSON responses.
+* Handle unexpected exceptions.
+* Hide stack traces in production.
+* Standardize HTTP error responses.
 
-## Requirements & Context
+Example response:
 
-Implement a `create_escrow()` function that:
-
-* Accepts the buyer address.
-* Accepts the seller address.
-* Accepts the token contract address.
-* Accepts the escrow amount.
-* Creates an `EscrowState`.
-* Sets the initial status to `Created`.
-* Persists the escrow using the storage helpers.
-
----
-
-## Acceptance Criteria
-
-* [ ] `create_escrow()` implemented.
-* [ ] Escrow is stored successfully.
-* [ ] Initial status is `Created`.
-* [ ] Function compiles.
-* [ ] Unit tests added.
-
----
-
-## Out of Scope
-
-* Authentication
-* Token transfers
-* Events
-* Refunds
-* Release flow
-
----
-
-## Suggested Execution
-
-```bash
-git checkout -b feat/create-escrow
+```json
+{
+  "success": false,
+  "message": "Invalid request",
+  "error": "VALIDATION_ERROR"
+}
 ```
 
----
-
-## Suggested Commit Message
+## Suggested Execution
 
 ```text
-feat: implement create_escrow entrypoint
+git checkout -b feat/error-handler
+
+Create error middleware
+
+Register middleware
+
+Standardize API responses
+
+Handle unexpected exceptions
 ```
 
----
-
-## Testing Notes
-
-Verify:
-
-* Escrow is persisted.
-* Fields are stored correctly.
-* Initial status equals `Created`.
-
----
-
-## References
-
-* Issue #2
-* Issue #4
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Tests pass.
-* [ ] Ready for review.
-
----
-
-# Issue #6 — feat: require buyer authorization during escrow creation
-
-## Description
-
-Escrow creation should only be initiated by the buyer creating the agreement.
-
-Implement buyer authorization using Soroban's `require_auth()` mechanism.
-
----
-
-## Requirements & Context
-
-Update `create_escrow()` so that:
-
-* Buyer must authorize the transaction.
-* Unauthorized callers are rejected.
-
-Use Soroban authentication best practices.
-
----
-
-## Acceptance Criteria
-
-* [ ] Buyer authorization added.
-* [ ] Unauthorized calls fail.
-* [ ] Existing functionality continues to work.
-* [ ] Tests added.
-
----
-
-## Out of Scope
-
-* Seller authorization
-* Mediator permissions
-* Token transfers
-
----
-
-## Suggested Execution
-
-```bash
-git checkout -b feat/buyer-auth
-```
-
----
-
-## Suggested Commit Message
+## Example Commit Message
 
 ```text
-feat: require buyer authorization
+feat: add centralized error handling middleware
 ```
 
 ---
 
-## Testing Notes
-
-Verify:
-
-* Buyer can create escrow.
-* Unauthorized caller is rejected.
-
----
-
-## References
-
-Issue #5
-
----
-
-## Definition of Done
-
-* [ ] Tests pass.
-* [ ] Ready for review.
-
----
-
-# Issue #7 — feat: validate escrow creation input
+# Issue 3 — Add Request Validation Middleware
 
 ## Description
 
-Prevent invalid escrow records from being created by validating all required input before persisting state.
+Incoming API requests should be validated before reaching the service layer to prevent malformed payloads from generating invalid Soroban transactions.
 
-This protects the contract against malformed escrow agreements.
+## Requirements and Context
 
----
+* Create reusable validation middleware.
+* Validate request body.
+* Validate required fields.
+* Return descriptive validation errors.
+* Keep validation separate from business logic.
 
-## Requirements & Context
-
-Validate at minimum:
-
-* Buyer address is valid.
-* Seller address is valid.
-* Buyer and seller are different.
-* Amount is greater than zero.
-
-Return appropriate contract errors.
-
----
-
-## Acceptance Criteria
-
-* [ ] Input validation implemented.
-* [ ] Invalid requests rejected.
-* [ ] Error handling follows project conventions.
-* [ ] Tests added.
-
----
-
-## Out of Scope
-
-* Token balance validation
-* Token transfers
-* Escrow funding
-
----
+The middleware should be reusable across future endpoints.
 
 ## Suggested Execution
-
-```bash
-git checkout -b feat/create-escrow-validation
-```
-
----
-
-## Suggested Commit Message
 
 ```text
-feat: validate escrow creation input
+git checkout -b feat/request-validation
+
+Create validation middleware
+
+Validate request payloads
+
+Return standardized validation errors
+
+Apply middleware to routes
 ```
 
----
-
-## Testing Notes
-
-Verify:
-
-* Zero amount rejected.
-* Buyer == seller rejected.
-* Valid request succeeds.
-
----
-
-## References
-
-Issue #5
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Tests pass.
-* [ ] Ready for review.
-
----
-
-# Issue #8 — feat: add seller authorization for fund release
-
-## Description
-
-Escrow funds should only be released through authorized participants in the escrow lifecycle.
-
-Implement seller-side authorization requirements where appropriate in preparation for the release flow.
-
-This issue establishes the authorization foundation before token transfer logic is introduced.
-
----
-
-## Requirements & Context
-
-Implement reusable authorization logic for the seller.
-
-The authorization should integrate cleanly with the upcoming `release_funds()` implementation.
-
----
-
-## Acceptance Criteria
-
-* [ ] Seller authorization helper implemented.
-* [ ] Unauthorized access rejected.
-* [ ] Tests added.
-* [ ] Reusable by future contract functions.
-
----
-
-## Out of Scope
-
-* Release logic
-* Token transfers
-* Events
-* Refunds
-
----
-
-## Suggested Execution
-
-```bash
-git checkout -b feat/seller-auth
-```
-
----
-
-## Suggested Commit Message
+## Example Commit Message
 
 ```text
-feat: implement seller authorization
+feat: add reusable request validation middleware
 ```
 
 ---
 
-## Testing Notes
-
-Verify:
-
-* Seller authorization succeeds.
-* Unauthorized caller is rejected.
-
----
-
-## References
-
-* Issue #6
-* Dependency Map
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Tests pass.
-* [ ] Ready for maintainer review.
-
-
-# Issue #9 — feat: integrate Soroban Token Client
+# Issue 4 — Implement Health Check Endpoint
 
 ## Description
 
-The escrow contract currently has no interaction with the Soroban Token Interface. Implement the token client integration that will be used throughout the escrow lifecycle to facilitate token transfers.
+Expose a lightweight endpoint that allows developers and deployment platforms to verify that the relayer service is running correctly.
 
-This serves as the foundation for all fund movement within the contract.
+## Requirements and Context
 
----
+Create a health endpoint that returns:
 
-## Requirements & Context
+* Service status
+* Current environment
+* Server timestamp
+* API version
 
-* Import and instantiate the Soroban `token::Client`.
-* Create reusable helper(s) for obtaining a token client from a token contract address.
-* Keep the implementation reusable for future escrow operations.
-
----
-
-## Acceptance Criteria
-
-* [ ] Soroban Token Client integrated.
-* [ ] Reusable helper(s) implemented.
-* [ ] Code compiles successfully.
-* [ ] Unit tests added where appropriate.
-
----
-
-## Out of Scope
-
-* Locking funds
-* Releasing funds
-* Refunding funds
-* Events
-
----
-
-## Suggested Execution
-
-```bash
-git checkout -b feat/token-client
-```
-
----
-
-## Suggested Commit Message
+Example endpoint:
 
 ```text
-feat: integrate Soroban Token Client
+GET /health
 ```
 
----
+Example response:
 
-## Testing Notes
+```json
+{
+  "status": "ok",
+  "service": "padipay-relayer-api",
+  "version": "0.1.0",
+  "timestamp": "..."
+}
+```
 
-Verify:
-
-* Token client initializes successfully.
-* Helper methods are reusable by other contract functions.
-
----
-
-## References
-
-* Soroban Token Interface
-* Issue #5
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Ready for review.
-
----
-
-# Issue #10 — feat: implement lock_funds
-
-## Description
-
-Implement the `lock_funds()` entrypoint.
-
-This function transfers funds from the buyer into the escrow and updates the escrow status to `Locked`.
-
-This is the first point where assets are actually secured by the contract.
-
----
-
-## Requirements & Context
-
-Implement `lock_funds()` so that it:
-
-* Requires buyer authorization.
-* Retrieves the escrow.
-* Uses the stored token address.
-* Transfers funds into escrow.
-* Updates escrow status to `Locked`.
-* Persists the updated escrow.
-
----
-
-## Acceptance Criteria
-
-* [ ] Buyer authorization enforced.
-* [ ] Funds transferred into escrow.
-* [ ] Escrow status updated.
-* [ ] Storage updated.
-* [ ] Tests added.
-
----
-
-## Out of Scope
-
-* Release flow
-* Refund flow
-* Events
-
----
+The endpoint should not require authentication.
 
 ## Suggested Execution
-
-```bash
-git checkout -b feat/lock-funds
-```
-
----
-
-## Suggested Commit Message
 
 ```text
-feat: implement lock_funds
+git checkout -b feat/health-endpoint
+
+Create health route
+
+Register endpoint
+
+Return service metadata
+
+Add unit tests
 ```
 
----
-
-## Testing Notes
-
-Verify:
-
-* Buyer can successfully lock funds.
-* Escrow status becomes `Locked`.
-* Storage reflects the updated state.
-
----
-
-## References
-
-* Issue #5
-* Issue #9
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Tests pass.
-* [ ] Ready for review.
-
----
-
-# Issue #11 — feat: implement release_funds
-
-## Description
-
-Implement the `release_funds()` entrypoint.
-
-This function completes the escrow by transferring funds from the escrow to the seller.
-
-It represents the successful completion of the escrow lifecycle.
-
----
-
-## Requirements & Context
-
-Implement `release_funds()` so that it:
-
-* Validates escrow state.
-* Uses the stored token address.
-* Transfers funds to the seller.
-* Updates escrow status to `Released`.
-* Persists the updated escrow.
-
----
-
-## Acceptance Criteria
-
-* [ ] Funds transferred successfully.
-* [ ] Escrow status updated to `Released`.
-* [ ] Invalid state transitions rejected.
-* [ ] Storage updated.
-* [ ] Tests added.
-
----
-
-## Out of Scope
-
-* Refund flow
-* Events
-* Human Oracle integration
-
----
-
-## Suggested Execution
-
-```bash
-git checkout -b feat/release-funds
-```
-
----
-
-## Suggested Commit Message
+## Example Commit Message
 
 ```text
-feat: implement release_funds
+feat: add application health endpoint
 ```
 
 ---
 
-## Testing Notes
-
-Verify:
-
-* Funds reach the seller.
-* Escrow status becomes `Released`.
-* Releasing an already released escrow fails.
-
----
-
-## References
-
-* Issue #8
-* Issue #10
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Tests pass.
-* [ ] Ready for review.
-
----
-
-# Issue #12 — feat: implement refund flow
+# Issue 5 — Configure Soroban Contract Client
 
 ## Description
 
-Implement the `refund()` entrypoint to allow escrow funds to be returned to the buyer before the escrow has been completed.
+The Escrow Service requires a reusable Soroban contract client capable of interacting with the deployed PadiPay escrow contract.
 
-This provides the second valid completion path for the MVP.
+This issue establishes the foundation for all subsequent contract invocation work.
 
----
+## Requirements and Context
 
-## Requirements & Context
+* Read the contract ID from configuration.
+* Initialize the Stellar SDK client.
+* Create a reusable contract client.
+* Export the client for use by the Escrow Service.
+* Handle invalid contract configuration gracefully.
 
-Implement `refund()` so that it:
-
-* Validates escrow state.
-* Transfers escrowed funds back to the buyer.
-* Updates escrow status to `Refunded`.
-* Persists the updated escrow.
-
----
-
-## Acceptance Criteria
-
-* [ ] Refund transfers funds successfully.
-* [ ] Escrow status becomes `Refunded`.
-* [ ] Invalid refunds rejected.
-* [ ] Storage updated.
-* [ ] Tests added.
-
----
-
-## Out of Scope
-
-* Human mediator approval
-* Dispute resolution
-* Events
-
----
+This issue should only establish the client and should not invoke contract methods yet.
 
 ## Suggested Execution
-
-```bash
-git checkout -b feat/refund-flow
-```
-
----
-
-## Suggested Commit Message
 
 ```text
-feat: implement refund flow
+git checkout -b feat/soroban-contract-client
+
+Configure Stellar SDK
+
+Read contract configuration
+
+Initialize contract client
+
+Export reusable client
+
+Add basic tests
 ```
 
----
-
-## Testing Notes
-
-Verify:
-
-* Buyer receives refunded funds.
-* Escrow status becomes `Refunded`.
-* Released escrows cannot be refunded.
-
----
-
-## References
-
-* Issue #10
-* v0.1.0 MVP Scope
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Tests pass.
-* [ ] Ready for maintainer review.
-
-
-
-# Issue #13 — feat: validate escrow state transitions
-
-## Description
-
-The contract should only allow valid escrow state transitions. Implement centralized validation logic to prevent illegal transitions throughout the escrow lifecycle.
-
-This improves contract safety and keeps lifecycle rules consistent across all entrypoints.
-
----
-
-## Requirements & Context
-
-Implement reusable validation logic enforcing:
-
-* `Created → Locked`
-* `Locked → Released`
-* `Locked → Refunded`
-
-Reject all other transitions.
-
----
-
-## Acceptance Criteria
-
-* [ ] State transition validator implemented.
-* [ ] Invalid transitions return appropriate contract errors.
-* [ ] Existing functions use the validator.
-* [ ] Unit tests added.
-
----
-
-## Out of Scope
-
-* Human Oracle
-* Timeouts
-* Disputes
-* Events
-
----
-
-## Suggested Execution
-
-```bash
-git checkout -b feat/state-transition-validation
-```
-
----
-
-## Suggested Commit Message
+## Example Commit Message
 
 ```text
-feat: validate escrow state transitions
+feat: configure reusable Soroban contract client
 ```
 
----
 
-## Testing Notes
-
-Verify:
-
-* Valid transitions succeed.
-* Invalid transitions fail.
-* Released escrows cannot change state.
-
----
-
-## References
-
-* Issues #10–#12
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Tests pass.
-* [ ] Ready for review.
-
----
-
-# Issue #14 — feat: prevent duplicate escrow funding
+# Issue 6 — Implement Soroban Transaction Builder
 
 ## Description
 
-Once an escrow has been funded, additional calls to `lock_funds()` should be rejected.
+Implement the core transaction builder responsible for constructing Soroban contract invocation transactions.
 
-This prevents accidental or malicious double funding.
+This service translates validated API requests into unsigned Soroban transactions that can later be sponsored and submitted to the Stellar network.
 
----
+## Requirements and Context
 
-## Requirements & Context
+* Create a reusable transaction builder.
+* Accept contract method name and arguments.
+* Construct an unsigned Soroban transaction.
+* Return the transaction XDR.
+* Keep transaction construction independent of signing.
 
-Update `lock_funds()` to reject escrows that are already in the `Locked`, `Released`, or `Refunded` states.
-
-Return an appropriate contract error.
-
----
-
-## Acceptance Criteria
-
-* [ ] Duplicate funding prevented.
-* [ ] Existing happy path unaffected.
-* [ ] Unit tests added.
-
----
-
-## Out of Scope
-
-* Refund flow
-* Release flow
-* Events
-
----
+The transaction builder should become the single entry point for creating contract invocation transactions.
 
 ## Suggested Execution
-
-```bash
-git checkout -b feat/prevent-double-funding
-```
-
----
-
-## Suggested Commit Message
 
 ```text
-feat: prevent duplicate escrow funding
+git checkout -b feat/transaction-builder
+
+Create transaction builder
+
+Accept contract method and arguments
+
+Construct unsigned transaction
+
+Return transaction XDR
+
+Add unit tests
 ```
 
----
-
-## Testing Notes
-
-Verify:
-
-* First funding succeeds.
-* Second funding fails.
-* Escrow state remains unchanged.
-
----
-
-## References
-
-* Issue #10
-* Issue #13
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Tests pass.
-
----
-
-# Issue #15 — feat: introduce contract error enum
-
-## Description
-
-The contract currently lacks a centralized error model.
-
-Introduce a contract-wide `Error` enum to standardize failures across the escrow lifecycle.
-
----
-
-## Requirements & Context
-
-Create explicit error variants for scenarios such as:
-
-* Unauthorized
-* InvalidState
-* EscrowNotFound
-* InvalidAmount
-* EscrowAlreadyFunded
-
-Ensure future errors can be added without breaking existing code.
-
----
-
-## Acceptance Criteria
-
-* [ ] Error enum created.
-* [ ] Existing functions updated.
-* [ ] Error handling standardized.
-* [ ] Unit tests updated.
-
----
-
-## Out of Scope
-
-* New contract features
-* Human Oracle errors
-
----
-
-## Suggested Execution
-
-```bash
-git checkout -b feat/contract-errors
-```
-
----
-
-## Suggested Commit Message
+## Example Commit Message
 
 ```text
-feat: introduce contract error enum
+feat: implement Soroban transaction builder
 ```
 
 ---
 
-## Testing Notes
-
-Verify:
-
-* Errors are returned correctly.
-* Existing tests continue to pass.
-
----
-
-## References
-
-* CONTRIBUTING.md
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Tests pass.
-
----
-
-# Issue #16 — refactor: extract reusable escrow validation helpers
+# Issue 7 — Implement Create Escrow Contract Invocation
 
 ## Description
 
-Several entrypoints now perform similar validation logic.
+Add support for constructing the contract invocation used to create a new escrow.
 
-Extract reusable validation helpers to reduce duplication and improve maintainability.
+This is the first end-to-end interaction between the relayer and the PadiPay escrow contract.
 
-This refactor should not change contract behavior.
+## Requirements and Context
 
----
+* Add a dedicated create escrow method.
+* Accept the required escrow parameters.
+* Build the appropriate contract invocation.
+* Return the generated transaction XDR.
+* Validate required arguments before transaction construction.
 
-## Requirements & Context
-
-Extract reusable helper functions for validating:
-
-* Escrow existence
-* Escrow ownership
-* Escrow status
-* Escrow mutability
-
-Refactor existing functions to use these helpers.
-
----
-
-## Acceptance Criteria
-
-* [ ] Duplicate validation removed.
-* [ ] Helper module created.
-* [ ] Existing behavior unchanged.
-* [ ] Tests continue to pass.
-
----
-
-## Out of Scope
-
-* New features
-* Storage changes
-* Token transfer changes
-
----
+Do not perform transaction signing or submission in this issue.
 
 ## Suggested Execution
-
-```bash
-git checkout -b refactor/validation-helpers
-```
-
----
-
-## Suggested Commit Message
 
 ```text
-refactor: extract escrow validation helpers
+git checkout -b feat/create-escrow-invocation
+
+Implement create escrow service
+
+Map request payload
+
+Build contract invocation
+
+Return unsigned transaction
+
+Write unit tests
 ```
 
----
-
-## Testing Notes
-
-Run the full test suite to ensure no regressions have been introduced.
-
----
-
-## References
-
-* Issues #5–#15
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Full test suite passes.
-* [ ] Ready for maintainer review.
-
-
-# Issue #17 — feat: publish escrow lifecycle events
-
-## Description
-
-Implement event publishing for all major escrow lifecycle actions. Events allow off-chain services, explorers, and future indexers to observe contract activity without reading contract storage directly.
-
----
-
-## Requirements & Context
-
-Publish events for:
-
-* EscrowCreated
-* FundsLocked
-* FundsReleased
-* EscrowRefunded
-
-Use consistent event topics and payloads.
-
----
-
-## Acceptance Criteria
-
-* [ ] Events emitted for escrow creation.
-* [ ] Events emitted when funds are locked.
-* [ ] Events emitted when funds are released.
-* [ ] Events emitted when refunds occur.
-* [ ] Existing tests updated.
-
----
-
-## Out of Scope
-
-* Event indexing
-* Analytics
-* Oracle events
-
----
-
-## Suggested Execution
-
-```bash
-git checkout -b feat/escrow-events
-```
-
----
-
-## Suggested Commit Message
+## Example Commit Message
 
 ```text
-feat: publish escrow lifecycle events
+feat: implement create escrow contract invocation
 ```
 
 ---
 
-## Testing Notes
-
-Verify each successful contract action emits the expected event.
-
----
-
-## References
-
-* Soroban Events Documentation
-* Issues #5–#12
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Tests pass.
-* [ ] Ready for review.
-
----
-
-# Issue #18 — test: implement comprehensive escrow lifecycle tests
+# Issue 8 — Implement Lock Funds Contract Invocation
 
 ## Description
 
-The current test suite is scaffolded. Implement comprehensive tests covering the complete happy path of the escrow lifecycle.
+Implement support for constructing the contract invocation responsible for locking escrow funds.
 
----
+This endpoint represents the first funding step in the escrow lifecycle.
 
-## Requirements & Context
+## Requirements and Context
 
-Add tests for:
+* Add lock funds service method.
+* Accept escrow identifier.
+* Build lock funds invocation.
+* Validate required request parameters.
+* Return unsigned transaction XDR.
 
-* Escrow creation
-* Locking funds
-* Releasing funds
-* Refunding funds
-
-Verify storage and state transitions after every operation.
-
----
-
-## Acceptance Criteria
-
-* [ ] Happy path tests added.
-* [ ] Storage assertions added.
-* [ ] State transition assertions added.
-* [ ] Tests pass consistently.
-
----
-
-## Out of Scope
-
-* Oracle testing
-* Benchmarking
-
----
+Keep transaction construction reusable.
 
 ## Suggested Execution
-
-```bash
-git checkout -b test/escrow-lifecycle
-```
-
----
-
-## Suggested Commit Message
 
 ```text
-test: add escrow lifecycle integration tests
+git checkout -b feat/lock-funds-invocation
+
+Implement lock funds service
+
+Construct invocation
+
+Validate request
+
+Return unsigned transaction
+
+Add tests
 ```
 
----
-
-## Testing Notes
-
-Run the full suite using:
-
-```bash
-cargo test
-```
-
----
-
-## References
-
-Issues #5–#17
-
----
-
-## Definition of Done
-
-* [ ] All lifecycle tests pass.
-* [ ] Ready for review.
-
----
-
-# Issue #19 — test: add authorization and failure-path tests
-
-## Description
-
-Ensure authorization checks and invalid contract operations behave correctly.
-
-Every public contract function should reject unauthorized callers and invalid state transitions.
-
----
-
-## Requirements & Context
-
-Cover scenarios including:
-
-* Unauthorized escrow creation
-* Unauthorized release
-* Duplicate funding
-* Invalid refunds
-* Invalid state transitions
-
----
-
-## Acceptance Criteria
-
-* [ ] Authorization tests added.
-* [ ] Failure-path tests added.
-* [ ] Error assertions included.
-
----
-
-## Out of Scope
-
-* Performance testing
-* Fuzz testing
-
----
-
-## Suggested Execution
-
-```bash
-git checkout -b test/auth-and-errors
-```
-
----
-
-## Suggested Commit Message
+## Example Commit Message
 
 ```text
-test: add authorization and failure-path tests
+feat: implement lock funds contract invocation
 ```
 
 ---
 
-## Testing Notes
-
-Ensure every error condition introduced in previous issues is covered.
-
----
-
-## References
-
-Issues #6–#16
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Tests pass.
-
----
-
-# Issue #20 — refactor: improve test utilities and reduce duplication
+# Issue 9 — Implement Release & Refund Contract Invocations
 
 ## Description
 
-As the test suite grows, duplicate setup logic becomes difficult to maintain.
+Implement the remaining happy-path escrow actions by supporting both release and refund contract invocations.
 
-Extract reusable helpers to simplify future test development.
+These operations complete the MVP escrow lifecycle.
 
----
+## Requirements and Context
 
-## Requirements & Context
+* Implement release funds invocation.
+* Implement refund invocation.
+* Validate escrow identifier.
+* Return unsigned transaction XDR.
+* Keep implementation consistent with existing escrow methods.
 
-Refactor common setup into reusable utilities, including:
-
-* Mock environment setup
-* Test addresses
-* Mock token creation
-* Shared assertions
-
----
-
-## Acceptance Criteria
-
-* [ ] Duplicate setup removed.
-* [ ] Helper functions introduced.
-* [ ] Existing tests remain unchanged.
-* [ ] Full test suite passes.
-
----
-
-## Out of Scope
-
-* New contract functionality
-
----
+Do not implement dispute resolution in this milestone.
 
 ## Suggested Execution
-
-```bash
-git checkout -b refactor/test-helpers
-```
-
----
-
-## Suggested Commit Message
 
 ```text
-refactor: extract reusable testing utilities
+git checkout -b feat/release-refund-invocations
+
+Implement release invocation
+
+Implement refund invocation
+
+Validate requests
+
+Return transaction XDR
+
+Write unit tests
+```
+
+## Example Commit Message
+
+```text
+feat: implement release and refund contract invocations
 ```
 
 ---
 
-## Testing Notes
-
-Run the complete test suite to verify no regressions.
-
----
-
-## References
-
-Issue #18
-
----
-
-## Definition of Done
-
-* [ ] Acceptance criteria completed.
-* [ ] Ready for maintainer review.
-
-
-
-# Batch 6 — Documentation, CI & Testnet Deployment
-
----
-
-# Issue #21 — docs: improve repository README
+# Issue 10 — Configure Stellar RPC Client
 
 ## Description
 
-The current README should evolve from a scaffold overview into contributor-focused documentation that explains the purpose of the project, the escrow lifecycle, local development workflow, and current MVP scope.
+Implement a reusable Stellar RPC client that will be shared across the relayer for transaction submission and network queries.
 
-This will serve as the primary entry point for new contributors.
+The client should centralize network communication and configuration.
 
----
+## Requirements and Context
 
-## Requirements & Context
+* Read RPC configuration from environment.
+* Initialize Stellar RPC client.
+* Export reusable client instance.
+* Handle invalid configuration.
+* Keep RPC logic isolated from business services.
 
-Update the README to include:
-
-* Project overview
-* Escrow lifecycle diagram
-* Architecture overview
-* Local development instructions
-* Testing instructions
-* Current MVP scope
-* Roadmap summary
-* Related repositories
-
----
-
-## Acceptance Criteria
-
-* [ ] README updated.
-* [ ] Development instructions verified.
-* [ ] Architecture section added.
-* [ ] Roadmap included.
-* [ ] Links verified.
-
----
-
-## Out of Scope
-
-* API documentation
-* SDK documentation
-
----
+This client will be used by both the Stellar Service and Transaction Status Service.
 
 ## Suggested Execution
 
-```bash id="fb80hi"
-git checkout -b docs/readme-refresh
+```text
+git checkout -b feat/stellar-rpc-client
+
+Configure RPC client
+
+Load configuration
+
+Export reusable instance
+
+Handle configuration errors
+
+Add tests
 ```
 
----
+## Example Commit Message
 
-## Suggested Commit Message
-
-```text id="yuw9hy"
-docs: improve repository README
+```text
+feat: configure reusable Stellar RPC client
 ```
 
----
 
-## Testing Notes
-
-Verify every documented command executes successfully.
-
----
-
-## References
-
-* CONTRIBUTING.md
-* PadiPay Architecture
-
----
-
-## Definition of Done
-
-* [ ] Documentation reviewed.
-* [ ] Ready for merge.
-
----
-
-# Issue #22 — ci: add GitHub Actions workflow
+# Issue 11 — Implement Fee Bump Transaction Builder
 
 ## Description
 
-Automate basic quality checks for every pull request.
+Implement the Fee Bump transaction builder responsible for sponsoring transaction fees on behalf of users.
 
-Every contribution should automatically run formatting, linting, and tests before review.
+This is the core feature that enables the Web2.5 experience by allowing users to interact with Soroban contracts without holding XLM.
 
----
+## Requirements and Context
 
-## Requirements & Context
+* Accept an unsigned transaction XDR.
+* Construct a Fee Bump transaction.
+* Configure the sponsor account.
+* Return the sponsored transaction.
+* Keep sponsorship logic isolated from submission.
 
-Create a GitHub Actions workflow that runs:
-
-* cargo fmt --check
-* cargo clippy
-* cargo test
-
-The workflow should execute for:
-
-* Pull Requests
-* Pushes to `main`
-
----
-
-## Acceptance Criteria
-
-* [ ] Workflow created.
-* [ ] Formatting verified.
-* [ ] Clippy verified.
-* [ ] Tests executed automatically.
-
----
-
-## Out of Scope
-
-* Deployment automation
-* Release automation
-
----
+Do not submit the transaction in this issue.
 
 ## Suggested Execution
 
-```bash id="2u7h1d"
-git checkout -b ci/github-actions
+```text
+git checkout -b feat/fee-bump-builder
+
+Implement Fee Bump builder
+
+Load sponsor account
+
+Wrap unsigned transaction
+
+Return sponsored transaction
+
+Add unit tests
+```
+
+## Example Commit Message
+
+```text
+feat: implement Fee Bump transaction builder
 ```
 
 ---
 
-## Suggested Commit Message
-
-```text id="g1qlkt"
-ci: add GitHub Actions workflow
-```
-
----
-
-## Testing Notes
-
-Open a test PR and verify the workflow completes successfully.
-
----
-
-## References
-
-GitHub Actions Documentation
-
----
-
-## Definition of Done
-
-* [ ] CI passes successfully.
-* [ ] Ready for review.
-
----
-
-# Issue #23 — chore: deploy contract to Stellar Testnet
+# Issue 12 — Implement Transaction Signing
 
 ## Description
 
-Deploy the MVP contract to Stellar Testnet and document the deployment details.
+Implement the signing flow for sponsored transactions using the configured Fee Bump sponsor account.
 
-This demonstrates that the contract is not only functional locally but also deployable to a live blockchain environment.
+The signing process should remain isolated from transaction construction and submission.
+
+## Requirements and Context
+
+* Read sponsor secret from configuration.
+* Sign sponsored transactions.
+* Return signed transaction.
+* Handle invalid signing configuration.
+* Never expose private keys through logs or API responses.
+
+Signing should be reusable across future transaction types.
+
+## Suggested Execution
+
+```text
+git checkout -b feat/transaction-signing
+
+Load sponsor credentials
+
+Sign sponsored transaction
+
+Return signed transaction
+
+Handle signing failures
+
+Write unit tests
+```
+
+## Example Commit Message
+
+```text
+feat: implement sponsored transaction signing
+```
 
 ---
 
-## Requirements & Context
+# Issue 13 — Submit Transactions to Stellar RPC
 
-Deploy the latest v0.1.0 contract to Stellar Testnet and document:
+## Description
 
-* Contract ID
+Implement the transaction submission workflow responsible for broadcasting signed transactions to the Stellar network.
+
+This issue completes the end-to-end transaction pipeline.
+
+## Requirements and Context
+
+* Accept signed transaction.
+* Submit transaction to Stellar RPC.
+* Capture submission response.
+* Return transaction hash.
+* Handle submission failures gracefully.
+
+Submission logic should remain reusable for future contract actions.
+
+## Suggested Execution
+
+```text
+git checkout -b feat/submit-transactions
+
+Implement submission service
+
+Submit signed transaction
+
+Capture response
+
+Return transaction hash
+
+Add tests
+```
+
+## Example Commit Message
+
+```text
+feat: submit sponsored transactions to Stellar RPC
+```
+
+---
+
+# Issue 14 — Normalize Transaction Submission Responses
+
+## Description
+
+Create a consistent response format for all transaction submissions.
+
+Consumers of the relayer should receive predictable responses regardless of the underlying Stellar SDK response structure.
+
+## Requirements and Context
+
+Normalize successful responses to include:
+
+* Success status
+* Transaction hash
 * Network
-* Deployment command
-* Required environment variables
+* Timestamp
 
-Update the repository with deployment instructions.
+Normalize failed responses to include:
 
----
+* Success status
+* Error code
+* Error message
 
-## Acceptance Criteria
-
-* [ ] Contract successfully deployed.
-* [ ] Contract ID documented.
-* [ ] Deployment guide added.
-* [ ] Deployment verified.
-
----
-
-## Out of Scope
-
-* Mainnet deployment
-* Upgrade strategy
-
----
+Avoid leaking raw SDK responses to clients.
 
 ## Suggested Execution
 
-```bash id="s2w5hs"
-git checkout -b chore/testnet-deployment
+```text
+git checkout -b feat/normalize-submission-response
+
+Create response formatter
+
+Normalize success responses
+
+Normalize error responses
+
+Update submission service
+
+Write unit tests
+```
+
+## Example Commit Message
+
+```text
+feat: normalize Stellar transaction responses
 ```
 
 ---
 
-## Suggested Commit Message
-
-```text id="6jlwmr"
-chore: deploy contract to Stellar Testnet
-```
-
----
-
-## Testing Notes
-
-Verify deployed contract is callable using the documented contract ID.
-
----
-
-## References
-
-* Stellar CLI Documentation
-
----
-
-## Definition of Done
-
-* [ ] Deployment verified.
-* [ ] Documentation updated.
-
----
-
-# Issue #24 — docs: publish v0.1.0 release notes and roadmap
+# Issue 15 — Implement Transaction Status Lookup
 
 ## Description
 
-Prepare the repository for the first public milestone by documenting what has been delivered in v0.1.0 and what contributors can work on next.
+Implement the transaction status service responsible for retrieving the current status of submitted transactions from the Stellar network.
 
-This issue serves as the bridge between the MVP and future community development.
+This allows client applications to monitor transaction progress after submission.
 
----
+## Requirements and Context
 
-## Requirements & Context
+* Accept transaction hash.
+* Query Stellar RPC.
+* Return current transaction status.
+* Handle unknown transaction hashes.
+* Keep status lookup independent from transaction submission.
 
-Create release notes that include:
-
-* Features delivered
-* Known limitations
-* Intentionally deferred features
-* Future milestones
-* Contributor opportunities
-
-Create or update a `ROADMAP.md` summarizing:
-
-* v0.2.0 — Contract Hardening
-* v0.3.0 — Human Oracle Integration
-* v0.4.0 — Production Readiness
-
----
-
-## Acceptance Criteria
-
-* [ ] Release notes written.
-* [ ] ROADMAP.md updated.
-* [ ] Deferred features documented.
-* [ ] Future milestones documented.
-
----
-
-## Out of Scope
-
-* Code changes
-* Contract upgrades
-
----
+This service will power the transaction status endpoint exposed by the API.
 
 ## Suggested Execution
 
-```bash id="mt8vnr"
-git checkout -b docs/v0.1-roadmap
+```text
+git checkout -b feat/transaction-status
+
+Implement transaction lookup
+
+Query Stellar RPC
+
+Return normalized status
+
+Handle missing transactions
+
+Add unit tests
+```
+
+## Example Commit Message
+
+```text
+feat: implement transaction status lookup
+```
+
+
+# Issue 16 — Parse Transaction Status Responses
+
+## Description
+
+Implement a response parser that converts raw Stellar RPC transaction status responses into a consistent format for client applications.
+
+This abstraction keeps Stellar-specific response structures out of the API layer.
+
+## Requirements and Context
+
+* Parse successful transaction responses.
+* Parse pending transaction responses.
+* Parse failed transaction responses.
+* Return a normalized response object.
+* Keep parsing logic reusable and independent from HTTP routes.
+
+The parser should become the single source of truth for interpreting transaction status responses.
+
+## Suggested Execution
+
+```text id="2v8bdb"
+git checkout -b feat/status-response-parser
+
+Create response parser
+
+Normalize RPC responses
+
+Handle different transaction states
+
+Export reusable parser
+
+Write unit tests
+```
+
+## Example Commit Message
+
+```text id="0cmvsl"
+feat: implement transaction status response parser
 ```
 
 ---
 
-## Suggested Commit Message
+# Issue 17 — Handle Failed Transaction States
 
-```text id="d1uvm0"
-docs: publish v0.1.0 roadmap and release notes
+## Description
+
+Improve the relayer's handling of failed Stellar transactions by mapping blockchain failures to consistent API responses.
+
+This ensures clients receive meaningful error information without exposing internal SDK details.
+
+## Requirements and Context
+
+Handle scenarios including:
+
+* Transaction rejected
+* Contract execution failure
+* Network failure
+* Invalid transaction
+* Unknown transaction
+
+Return standardized error responses for each failure scenario.
+
+## Suggested Execution
+
+```text id="0em4tb"
+git checkout -b feat/transaction-failure-handling
+
+Map Stellar failures
+
+Normalize error responses
+
+Update status service
+
+Improve logging
+
+Write unit tests
+```
+
+## Example Commit Message
+
+```text id="jlwmx5"
+feat: improve transaction failure handling
 ```
 
 ---
 
-## Testing Notes
+# Issue 18 — Expand Unit Test Coverage
 
-Review documentation for consistency with the implemented MVP.
+## Description
+
+Increase unit test coverage across the relayer to ensure the MVP is reliable and maintainable.
+
+Focus on testing service behavior rather than implementation details.
+
+## Requirements and Context
+
+Add tests covering:
+
+* Environment configuration
+* Request validation
+* Transaction builder
+* Fee Bump service
+* Transaction signing
+* Transaction submission
+* Transaction status lookup
+* Error handling
+
+Tests should remain isolated and deterministic.
+
+## Suggested Execution
+
+```text id="34f7vh"
+git checkout -b test/expand-unit-tests
+
+Review existing coverage
+
+Add missing tests
+
+Refactor duplicated test setup
+
+Verify all tests pass
+```
+
+## Example Commit Message
+
+```text id="h8gq7l"
+test: expand relayer unit test coverage
+```
 
 ---
 
-## References
+# Issue 19 — Configure Docker and Continuous Integration
 
-* v0.1.0 MVP Scope
-* Dependency Map
+## Description
+
+Improve the developer experience by containerizing the relayer and automating quality checks through GitHub Actions.
+
+This ensures contributors can validate changes consistently across environments.
+
+## Requirements and Context
+
+Configure:
+
+* Dockerfile
+* `.dockerignore`
+* GitHub Actions workflow
+
+CI should verify:
+
+* Dependency installation
+* Linting
+* Unit tests
+
+The workflow should run automatically on pull requests.
+
+## Suggested Execution
+
+```text id="53sq3r"
+git checkout -b ci/docker-and-github-actions
+
+Create Dockerfile
+
+Configure GitHub Actions
+
+Run linting
+
+Run tests
+
+Verify CI pipeline
+```
+
+## Example Commit Message
+
+```text id="tq5b6y"
+ci: add Docker support and GitHub Actions workflow
+```
 
 ---
 
-## Definition of Done
+# Issue 20 — Improve API Documentation
 
-* [ ] Documentation reviewed.
-* [ ] Ready for merge.
+## Description
 
+Complete the v0.1.0 documentation by documenting the relayer's public API endpoints, expected request payloads, response formats, and common error responses.
 
+Clear API documentation improves the onboarding experience for contributors and client applications.
+
+## Requirements and Context
+
+Document:
+
+* Available endpoints
+* Request bodies
+* Success responses
+* Error responses
+* Environment requirements
+* Example API calls
+
+Ensure the documentation reflects the current MVP implementation.
+
+## Suggested Execution
+
+```text id="bt8pv6"
+git checkout -b docs/api-documentation
+
+Document API endpoints
+
+Add request examples
+
+Add response examples
+
+Review documentation
+
+Update README if needed
+```
+
+## Example Commit Message
+
+```text id="jlwm2u"
+docs: document relayer API for v0.1.0
+```
 
