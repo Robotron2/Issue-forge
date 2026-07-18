@@ -66,14 +66,15 @@ def main():
                 data = yaml.safe_load(f)
                 
             issue_id = data["id"]
+            title = data.get("title", "")
             
             # If target ids specified, skip if not in target
             if target_ids and issue_id not in target_ids:
                 continue
                 
             # Check if already published
-            # Ensure key is zero-padded string as specified by user example
-            state_key = f"{issue_id:03d}"
+            # Use the lowercased title as the state key so local IDs can be restarted safely
+            state_key = title.strip().lower()
             if state_key in published_state:
                 console.print(f"[yellow]Skipping #{issue_id}: already published as GitHub Issue #{published_state[state_key].get('github_issue')}[/yellow]")
                 already_published_count += 1
@@ -95,7 +96,7 @@ def main():
             issue_id = data["id"]
             title = data["title"]
             labels = data.get("labels", [])
-            state_key = f"{issue_id:03d}"
+            state_key = title.strip().lower()
             
             console.print(f"\n[cyan]Target Repository:[/cyan] {config.owner}/{config.repo}")
             console.print(f"[cyan]Local Issue ID:[/cyan] {issue_id}")

@@ -137,12 +137,27 @@ def parse_issue(content: str) -> dict:
         "labels": labels
     }
 
+GENERATED_DIR = ROOT_DIR / "generated"
+
 def main():
     if not ORIGINAL_DIR.exists():
         console.print("[red]original/ directory does not exist.[/red]")
         return
         
     ISSUES_DIR.mkdir(exist_ok=True)
+    
+    # Auto-cleanup previous run's YAML files
+    old_yamls = list(ISSUES_DIR.glob("*.yml"))
+    if old_yamls:
+        console.print(f"[yellow]Cleaning up {len(old_yamls)} old issues from previous runs...[/yellow]")
+        for f in old_yamls:
+            f.unlink()
+            
+    # Auto-cleanup previous run's generated Markdown files
+    if GENERATED_DIR.exists():
+        old_mds = list(GENERATED_DIR.glob("*.md"))
+        for f in old_mds:
+            f.unlink()
     
     md_files = list(ORIGINAL_DIR.glob("*.md"))
     if not md_files:
